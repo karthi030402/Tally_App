@@ -7,6 +7,9 @@ xcuserdata/
 DerivedData/
 build/
 
+# Claude Code local settings
+.claude/
+
 # Swift Package Manager
 .build/
 .swiftpm/
