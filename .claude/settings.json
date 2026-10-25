@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "ask": [
+      "Write",
+      "Edit",
+      "NotebookEdit",
+      "mcp__xcode-tools__XcodeWrite",
+      "mcp__xcode-tools__XcodeUpdate",
+      "mcp__xcode-tools__XcodeRM",
+      "mcp__xcode-tools__XcodeMV",
+      "mcp__xcode-tools__XcodeMakeDir",
+      "mcp__xcode-tools__XcodeNewTarget",
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)"
+    ]
+  }
+}

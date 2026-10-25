@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct TallyApp: App {
+    @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -25,7 +27,8 @@ struct TallyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
+                .preferredColorScheme(appearance.colorScheme)
         }
         .modelContainer(sharedModelContainer)
     }
