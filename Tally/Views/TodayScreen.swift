@@ -36,7 +36,9 @@ struct TodayScreen: View {
             .alert("Log amount", isPresented: customAmountIsPresented, presenting: customAmountHabit) { habit in
                 TextField("Amount", text: $customAmountText)
                     .keyboardType(.decimalPad)
-                Button("Add") { viewModel.logCustom(habit, text: customAmountText) }
+                Button("Add") {
+                    viewModel.logCustom(habit, text: customAmountText)
+                }
                 Button("Cancel", role: .cancel) {}
             } message: { habit in
                 Text("How much \(habit.name) to add?")
@@ -48,12 +50,16 @@ struct TodayScreen: View {
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(viewModel.summaryTitle).font(.headline)
+                Text(viewModel.summaryTitle)
+                    .font(.headline)
+                
                 Spacer()
+                
                 Text(viewModel.summaryPercentText)
                     .font(.headline)
                     .foregroundStyle(AppTheme.accent)
             }
+            
             ProgressView(value: viewModel.summaryFraction)
                 .tint(AppTheme.accent)
         }
@@ -130,7 +136,9 @@ struct TodayScreen: View {
     private var customAmountIsPresented: Binding<Bool> {
         Binding(
             get: { customAmountHabit != nil },
-            set: { if !$0 { customAmountHabit = nil } }
+            set: {
+                if !$0 { customAmountHabit = nil }
+            }
         )
     }
 }

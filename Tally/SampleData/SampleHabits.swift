@@ -5,7 +5,7 @@ import TallyCore
 enum SampleHabits {
     static let water = HabitModel(
         name: "Water", symbol: "drop.fill", colorName: "indigo",
-        kind: .counter, target: 2500, step: 250, unit: "ml"
+        kind: .counter, target: 2500, step: 250, unit: "ml", weekdays: [.monday, .friday]
     )
     static let vitamins = HabitModel(
         name: "Vitamins", symbol: "pills.fill", colorName: "gold",
@@ -13,7 +13,7 @@ enum SampleHabits {
     )
     static let gym = HabitModel(
         name: "Gym", symbol: "dumbbell.fill", colorName: "coral",
-        kind: .checkOff, weekdays: [.monday, .wednesday, .friday]
+        kind: .checkOff, weekdays: [.monday, .friday]
     )
     static let reading = HabitModel(
         name: "Reading", symbol: "book.fill", colorName: "orchid",

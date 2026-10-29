@@ -5,7 +5,7 @@ enum TodaySection {
 
     func title(count: Int) -> String {
         switch self {
-        case .due: "DUE TODAY"
+        case .due: "DUE TODAY (\(count))"
         case .notScheduled: "NOT SCHEDULED TODAY (\(count))"
         }
     }
