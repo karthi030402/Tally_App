@@ -36,9 +36,45 @@ enum SampleHabits {
         ]
     }
 
-    /// A store filled with the sample habits and today's sample logs.
+    /// How many days before today the sample history covers. Real storage should keep a year or more.
+    static let historyDays = 84
+
+    /// How much of its goal a habit reaches, cycling through perfect days, partial days and misses.
+    private static let completionPattern: [Double] = [1, 1, 1, 0.8, 1, 0.6, 1, 0.4, 0.2, 1, 1, 0]
+
+    /// Earlier logs so the Insights charts and calendar have data. It is the same on every launch,
+    /// and a habit is only logged on the days it is due.
+    static func historyEntries(now: Date = .now, calendar: Calendar = .current) -> [HabitEntry] {
+        let today = calendar.startOfDay(for: now)
+        var entries: [HabitEntry] = []
+        for offset in 1...historyDays {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today),
+                  let noon = calendar.date(byAdding: .hour, value: 12, to: day) else { continue }
+            for (index, habit) in active.enumerated() where habit.isDue(on: day, calendar: calendar) {
+                let share = completionPattern[(offset * 7 + index * 5) % completionPattern.count]
+                entries += logs(for: habit, share: share, at: noon)
+            }
+        }
+        return entries
+    }
+
+    /// The taps that add up to `share` of the habit's goal, rounded down to whole steps.
+    private static func logs(for habit: HabitModel, share: Double, at date: Date) -> [HabitEntry] {
+        switch habit.kind {
+        case .checkOff:
+            return share >= 1 ? [HabitEntry(habitID: habit.id, date: date, amount: habit.tapAmount)] : []
+        case .counter:
+            let taps = Int((habit.goalAmount * share / habit.tapAmount).rounded(.down))
+            return (0..<taps).map { _ in HabitEntry(habitID: habit.id, date: date, amount: habit.tapAmount) }
+        }
+    }
+
+    /// A store filled with the sample habits, their history, and today's sample logs.
     static func makeStore() -> HabitStore {
-        HabitStore(habits: active, archivedHabits: archived, entries: todayEntries(), streaks: streaks)
+        HabitStore(
+            habits: active, archivedHabits: archived,
+            entries: historyEntries() + todayEntries(), streaks: streaks
+        )
     }
 
     /// Placeholder streaks until the streak engine exists.
