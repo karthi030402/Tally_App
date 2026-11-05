@@ -25,13 +25,18 @@ public extension HabitModel {
     /// The daily goal. A check-off habit counts as a goal of 1.
     var goalAmount: Double { target ?? 1 }
 
+    /// The daily goal that applied on `date`.
+    func goalAmount(on date: Date, calendar: Calendar = .current) -> Double {
+        rule(on: date, calendar: calendar).target ?? 1
+    }
+
     /// What one tap adds. A check-off habit adds 1.
     var tapAmount: Double { step ?? goalAmount }
 
-    /// Whether the habit is due on the weekday of `date`.
+    /// Whether the habit was due on the weekday of `date`, by the schedule that applied that day.
     func isDue(on date: Date, calendar: Calendar = .current) -> Bool {
         guard let weekday = HabitWeekday(rawValue: calendar.component(.weekday, from: date)) else { return false }
-        return isScheduled(on: weekday)
+        return rule(on: date, calendar: calendar).weekdays.contains(weekday)
     }
 
     /// This habit's progress on the day of `date`, from a list of everyone's entries.
@@ -39,6 +44,6 @@ public extension HabitModel {
         let total = entries
             .filter { $0.habitID == id && calendar.isDate($0.date, inSameDayAs: date) }
             .reduce(0) { $0 + $1.amount }
-        return HabitProgress(total: total, goal: goalAmount)
+        return HabitProgress(total: total, goal: goalAmount(on: date, calendar: calendar))
     }
 }

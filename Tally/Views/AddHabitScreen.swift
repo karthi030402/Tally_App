@@ -1,7 +1,8 @@
 import SwiftUI
 import TallyCore
 
-/// The Add Habit form. It's pushed onto the Habits stack; Save hands the new habit to `onSave`.
+/// The Add Habit form, which also edits an existing habit. It's pushed onto the Habits stack;
+/// Save hands the habit to `onSave`.
 struct AddHabitScreen: View {
     @State private var viewModel: AddHabitViewModel
     @FocusState private var focus: HabitFormField?
@@ -10,6 +11,11 @@ struct AddHabitScreen: View {
 
     init(onSave: @escaping (HabitModel) -> Void) {
         self.init(viewModel: AddHabitViewModel(), onSave: onSave)
+    }
+
+    /// The same form, filled in from an existing habit.
+    init(editing habit: HabitModel, onSave: @escaping (HabitModel) -> Void) {
+        self.init(viewModel: AddHabitViewModel(editing: habit), onSave: onSave)
     }
 
     /// Previews and tests can pass their own view model.
@@ -28,13 +34,18 @@ struct AddHabitScreen: View {
                     scheduleField
                     colorField
                     iconField
+                    if let note = viewModel.editNote {
+                        Text(note)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .padding(20)
                 .animation(.easeInOut(duration: 0.2), value: viewModel.kind)
             }
             .scrollDismissesKeyboard(.interactively)
             .background { DawnBackground() }
-            .navigationTitle("New Habit")
+            .navigationTitle(viewModel.screenTitle)
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
             .toolbar(.hidden, for: .tabBar)
@@ -56,10 +67,20 @@ struct AddHabitScreen: View {
             sheetContent(for: sheet)
         }
         .alert("Step not set", isPresented: $viewModel.showsStepAlert) {
-            Button("Save") { finish(with: viewModel.makeHabit()) }
+            Button("Save") {
+                if let habit = viewModel.confirmEmptyStep() { finish(with: habit) }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(viewModel.stepAlertMessage)
+        }
+        .alert("Apply from today?", isPresented: $viewModel.showsFromTodayAlert) {
+            Button("Save") {
+                if let habit = viewModel.confirmFromToday() { finish(with: habit) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(viewModel.fromTodayAlertMessage)
         }
         .alert("Discard changes?", isPresented: $viewModel.showsDiscardAlert) {
             Button("Discard", role: .destructive) { dismiss() }
@@ -67,7 +88,8 @@ struct AddHabitScreen: View {
         } message: {
             Text("You have unsaved changes. Going back will discard them.")
         }
-        .task { focus = .name }
+        // A new habit opens with the keyboard on the name. An edit opens quietly.
+        .task { if !viewModel.isEditing { focus = .name } }
     }
 
     /// Back asks first if anything was entered; otherwise it just leaves.
@@ -107,7 +129,9 @@ struct AddHabitScreen: View {
             optionTitle: \.title,
             optionDescription: {
                 $0.summary
-            }
+            },
+            isLocked: viewModel.isEditing,
+            lockedNote: "The type can't be changed after a habit is created."
         )
     }
 
@@ -263,4 +287,8 @@ private extension AddHabitViewModel {
 
 #Preview("Goal with errors") {
     NavigationStack { AddHabitScreen(viewModel: .goalWithErrors()) { _ in } }
+}
+
+#Preview("Editing a goal") {
+    NavigationStack { AddHabitScreen(editing: SampleHabits.water) { _ in } }
 }

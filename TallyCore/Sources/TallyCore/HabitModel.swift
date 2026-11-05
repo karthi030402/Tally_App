@@ -9,14 +9,10 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
     /// Key into the app's color palette, so this package needs no SwiftUI.
     public var colorName: String
     public var kind: HabitKind
-    /// Daily goal. Only for counter habits; `nil` for check-off.
-    public var target: Double?
-    /// Amount added per tap. Only for counter habits; `nil` for check-off.
-    public var step: Double?
-    /// Unit label such as "ml". `nil` for check-off, or for a counter with no unit.
-    public var unit: String?
-    /// The days the habit is due. Never empty; every day is all seven.
-    public var weekdays: Set<HabitWeekday>
+    /// The goal and schedule the habit started with.
+    private let initialRule: HabitRule
+    /// Later changes to the goal or schedule, oldest first. Each applies from its own day onwards.
+    public private(set) var changes: [HabitRevision]
 
     public init(
         id: UUID = UUID(),
@@ -33,30 +29,42 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
         self.name = name
         self.colorName = colorName
         self.kind = kind
-        self.weekdays = weekdays.isEmpty ? HabitWeekday.everyDay : weekdays
+        self.initialRule = HabitRule(kind: kind, target: target, step: step, unit: unit, weekdays: weekdays)
+        self.changes = []
 
         // A blank symbol name counts as "not chosen".
         let trimmedSymbol = symbol?.trimmingCharacters(in: .whitespaces) ?? ""
         self.symbol = trimmedSymbol.isEmpty ? nil : trimmedSymbol
+    }
 
-        switch kind {
-        case .checkOff:
-            self.target = nil
-            self.step = nil
-            self.unit = nil
-        case .counter:
-            // Fractions are allowed, so the only rule is "greater than zero".
-            let cleanTarget: Double
-            if let target, target > 0 { cleanTarget = target } else { cleanTarget = 1 }
-            // A step must be above zero and can't exceed the target. A missing step means one tap
-            // adds the whole goal.
-            let cleanStep: Double
-            if let step, step > 0 { cleanStep = min(step, cleanTarget) } else { cleanStep = cleanTarget }
-            self.target = cleanTarget
-            self.step = cleanStep
-            let trimmedUnit = unit?.trimmingCharacters(in: .whitespaces) ?? ""
-            self.unit = trimmedUnit.isEmpty ? nil : trimmedUnit
-        }
+    /// The goal and schedule in force right now.
+    public var currentRule: HabitRule { changes.last?.rule ?? initialRule }
+
+    /// Daily goal. Only for counter habits; `nil` for check-off.
+    public var target: Double? { currentRule.target }
+    /// Amount added per tap. Only for counter habits; `nil` for check-off.
+    public var step: Double? { currentRule.step }
+    /// Unit label such as "ml". `nil` for check-off, or for a counter with no unit.
+    public var unit: String? { currentRule.unit }
+    /// The days the habit is due. Never empty; every day is all seven.
+    public var weekdays: Set<HabitWeekday> { currentRule.weekdays }
+
+    /// The goal and schedule that applied on `date`. Days before any change use the starting rule.
+    public func rule(on date: Date, calendar: Calendar = .current) -> HabitRule {
+        let day = calendar.startOfDay(for: date)
+        return changes.last { $0.effectiveFrom <= day }?.rule ?? initialRule
+    }
+
+    /// A copy with `rule` in force from the start of `date` onwards. Earlier days keep their rule.
+    /// A second change on the same day replaces the first, and a change that matches the rule
+    /// already in force is not recorded.
+    public func changing(to rule: HabitRule, from date: Date, calendar: Calendar = .current) -> HabitModel {
+        var copy = self
+        let start = calendar.startOfDay(for: date)
+        copy.changes.removeAll { $0.effectiveFrom >= start }
+        guard rule != copy.currentRule else { return copy }
+        copy.changes.append(HabitRevision(effectiveFrom: start, rule: rule))
+        return copy
     }
 
     public var isEveryDay: Bool {
@@ -75,4 +83,3 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
         symbol ?? Self.fallbackSymbol
     }
 }
-

@@ -73,16 +73,7 @@ enum SampleHabits {
     static func makeStore() -> HabitStore {
         HabitStore(
             habits: active, archivedHabits: archived,
-            entries: historyEntries() + todayEntries(), streaks: streaks
+            entries: historyEntries() + todayEntries()
         )
     }
-
-    /// Placeholder streaks until the streak engine exists.
-    static let streaks: [UUID: Int] = [
-        water.id: 12,
-        vitamins.id: 5,
-        gym.id: 2,
-        reading.id: 0,
-        meditation.id: 3
-    ]
 }

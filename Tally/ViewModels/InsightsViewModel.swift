@@ -199,9 +199,27 @@ final class InsightsViewModel {
         case .checkOff:
             text = progress.isMet ? "Done" : "Not done"
         case .counter:
-            let unit = habit.unit.map { " \($0)" } ?? ""
+            let unit = habit.rule(on: day, calendar: calendar).unit.map { " \($0)" } ?? ""
             text = "\(progress.total.habitAmountText) / \(progress.goal.habitAmountText)\(unit)"
         }
         return HabitDayDetail(habit: habit, fraction: progress.fraction, text: text)
+    }
+
+    // MARK: Streaks
+
+    /// One row per habit, in the order the habits are listed.
+    var streakRows: [HabitStreakRow] {
+        store.habits.map { habit in
+            let streak = store.streak(for: habit)
+            return HabitStreakRow(
+                habit: habit,
+                currentText: dayCount(streak.current),
+                bestText: dayCount(streak.best)
+            )
+        }
+    }
+
+    private func dayCount(_ days: Int) -> String {
+        "\(days) \(days == 1 ? "day" : "days")"
     }
 }

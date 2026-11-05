@@ -2,6 +2,7 @@ import SwiftUI
 import TallyCore
 
 /// The Habits tab: active habits, then archived habits. An empty section shows a placeholder.
+/// Tapping an active habit opens it to edit.
 struct HabitsScreen: View {
     @State private var viewModel: HabitsViewModel
     @State private var path: [HabitsRoute] = []
@@ -24,7 +25,13 @@ struct HabitsScreen: View {
                 EmptySectionCard(message: HabitListSection.active.emptyMessage)
             } else {
                 ForEach(viewModel.habits) { habit in
-                    card(for: habit)
+                    Button {
+                        path.append(.editHabit(habit.id))
+                    } label: {
+                        card(for: habit)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens the habit to edit")
                 }
             }
         }
@@ -95,6 +102,13 @@ struct HabitsScreen: View {
                     AddHabitScreen {
                         viewModel.add($0)
                     }
+                case .editHabit(let id):
+                    // Looked up when the screen is built, in case the habit is gone by then.
+                    if let habit = viewModel.habit(id: id) {
+                        AddHabitScreen(editing: habit) {
+                            viewModel.update($0)
+                        }
+                    }
                 case .settings:
                     SettingsScreen()
                 }
@@ -112,5 +126,5 @@ struct HabitsScreen: View {
 }
 
 #Preview("No archived") {
-    HabitsScreen(store: HabitStore(habits: SampleHabits.active, streaks: SampleHabits.streaks))
+    HabitsScreen(store: HabitStore(habits: SampleHabits.active, entries: SampleHabits.historyEntries() + SampleHabits.todayEntries()))
 }

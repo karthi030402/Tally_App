@@ -9,6 +9,10 @@ struct RadioGroup<Option: Hashable>: View {
     @Binding var selection: Option
     let optionTitle: (Option) -> String
     var optionDescription: (Option) -> String? = { _ in nil }
+    /// When true the choice can't be changed. The selected option stays as it is and the rest dim.
+    var isLocked = false
+    /// Shown under the group while it is locked, to say why.
+    var lockedNote: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -24,6 +28,8 @@ struct RadioGroup<Option: Hashable>: View {
                         row(for: option)
                     }
                     .buttonStyle(.plain)
+                    .disabled(isLocked)
+                    .opacity(isLocked && option != selection ? 0.45 : 1)
 
                     if option != options.last {
                         Divider().padding(.leading, 50)
@@ -34,6 +40,12 @@ struct RadioGroup<Option: Hashable>: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(Color.secondary.opacity(0.25), lineWidth: 1)
+            }
+
+            if isLocked, let lockedNote {
+                Text(lockedNote)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

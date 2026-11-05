@@ -42,7 +42,7 @@ struct HabitListCard: View {
 
 #Preview {
     let viewModel = HabitsViewModel(
-        store: HabitStore(habits: SampleHabits.active, streaks: SampleHabits.streaks)
+        store: HabitStore(habits: SampleHabits.active, entries: SampleHabits.historyEntries() + SampleHabits.todayEntries())
     )
     VStack(spacing: 14) {
         ForEach(viewModel.habits) { habit in

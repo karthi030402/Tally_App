@@ -20,6 +20,17 @@ final class HabitsViewModel {
         store.add(habit)
     }
 
+    /// The active habit with this id, or nil if it is no longer there.
+    func habit(id: UUID) -> HabitModel? {
+        store.habits.first { $0.id == id }
+    }
+
+    /// Saves an edit. The name, color and icon apply to every day, and the goal and schedule
+    /// apply from today.
+    func update(_ habit: HabitModel) {
+        store.update(habit)
+    }
+
     // MARK: - Card text
 
     /// "Check-off · Daily" or "Goal 2500 ml · Mon Wed Fri".
@@ -48,7 +59,7 @@ final class HabitsViewModel {
     }
 
     func streak(for habit: HabitModel) -> Int {
-        store.streaks[habit.id] ?? 0
+        store.streak(for: habit).current
     }
 
     func streakText(for habit: HabitModel) -> String {

@@ -53,11 +53,21 @@ struct InsightsScreen: View {
                         rows: viewModel.selectedDayRows,
                         palette: palette
                     )
+                    streaks
                 }
                 .padding(.horizontal)
             }
             .background { DawnBackground() }
             .navigationTitle("Insights")
+        }
+    }
+
+    /// The Streaks card, left out when there are no habits.
+    @ViewBuilder
+    private var streaks: some View {
+        let rows = viewModel.streakRows
+        if !rows.isEmpty {
+            StreaksCard(rows: rows)
         }
     }
 
