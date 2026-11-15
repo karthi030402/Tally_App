@@ -5,10 +5,13 @@ let package = Package(
     name: "TallyCore",
     platforms: [.iOS(.v17)],
     products: [
-        .library(name: "TallyCore", targets: ["TallyCore"])
+        .library(name: "TallyCore", targets: ["TallyCore"]),
+        .library(name: "TallyStorage", targets: ["TallyStorage"])
     ],
     targets: [
         .target(name: "TallyCore"),
-        .testTarget(name: "TallyCoreTests", dependencies: ["TallyCore"])
+        .target(name: "TallyStorage", dependencies: ["TallyCore"]),
+        .testTarget(name: "TallyCoreTests", dependencies: ["TallyCore"]),
+        .testTarget(name: "TallyStorageTests", dependencies: ["TallyStorage", "TallyCore"])
     ]
 )

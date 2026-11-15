@@ -10,6 +10,8 @@ public struct HabitRule: Hashable, Sendable {
     public let unit: String?
     /// The days the habit is due. Never empty; every day is all seven.
     public let weekdays: Set<HabitWeekday>
+    /// False while the habit is archived. An archived habit isn't due on any day.
+    public let isActive: Bool
 
     /// Cleans the values the way a new habit always has: a check-off has no goal fields,
     /// a goal must be above zero, a step can't exceed the goal, and no days means every day.
@@ -18,8 +20,10 @@ public struct HabitRule: Hashable, Sendable {
         target: Double? = nil,
         step: Double? = nil,
         unit: String? = nil,
-        weekdays: Set<HabitWeekday> = HabitWeekday.everyDay
+        weekdays: Set<HabitWeekday> = HabitWeekday.everyDay,
+        isActive: Bool = true
     ) {
+        self.isActive = isActive
         self.weekdays = weekdays.isEmpty ? HabitWeekday.everyDay : weekdays
         switch kind {
         case .checkOff:
@@ -39,6 +43,20 @@ public struct HabitRule: Hashable, Sendable {
             let trimmedUnit = unit?.trimmingCharacters(in: .whitespaces) ?? ""
             self.unit = trimmedUnit.isEmpty ? nil : trimmedUnit
         }
+    }
+
+    /// Copies values that are already clean, so no kind is needed.
+    private init(target: Double?, step: Double?, unit: String?, weekdays: Set<HabitWeekday>, isActive: Bool) {
+        self.target = target
+        self.step = step
+        self.unit = unit
+        self.weekdays = weekdays
+        self.isActive = isActive
+    }
+
+    /// The same goal and schedule, active or archived.
+    public func settingActive(_ isActive: Bool) -> HabitRule {
+        HabitRule(target: target, step: step, unit: unit, weekdays: weekdays, isActive: isActive)
     }
 }
 

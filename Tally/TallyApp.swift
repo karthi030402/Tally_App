@@ -6,30 +6,17 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @main
 struct TallyApp: App {
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
-
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    /// The one store shared by every tab, backed by the on-disk database.
+    @State private var store = StoreSetup.makeStore()
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            MainTabView(store: store)
                 .preferredColorScheme(appearance.colorScheme)
         }
-        .modelContainer(sharedModelContainer)
     }
 }

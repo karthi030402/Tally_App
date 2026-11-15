@@ -55,4 +55,62 @@ struct HabitStoreTests {
         #expect(store.habits.count == 1)
         #expect(store.habits.first?.name == "Water")
     }
+
+    @Test func habitsPassedAsArchivedStartArchived() {
+        let meditation = HabitModel(name: "Meditation", colorName: "gold", kind: .checkOff)
+        let store = HabitStore(habits: [water], archivedHabits: [meditation])
+        #expect(store.habits.map(\.name) == ["Water"])
+        #expect(store.archivedHabits.map(\.name) == ["Meditation"])
+        #expect(store.allHabits.count == 2)
+    }
+
+    @Test func archivingMovesTheHabitToTheArchivedList() {
+        let store = storeWithOneLoggedDay()
+        store.archive(water, from: march(11), calendar: calendar)
+        #expect(store.habits.isEmpty)
+        #expect(store.archivedHabits.map(\.name) == ["Water"])
+    }
+
+    @Test func archivingKeepsTheLogsAndThePastDays() throws {
+        let store = storeWithOneLoggedDay()
+        store.archive(water, from: march(11), calendar: calendar)
+        let habit = try #require(store.allHabits.first)
+        #expect(store.entries.count == 1)
+        #expect(habit.progress(from: store.entries, on: march(9), calendar: calendar).isMet)
+        #expect(!habit.isDue(on: march(12), calendar: calendar))
+    }
+
+    @Test func unarchivingBringsTheHabitBackFromThatDay() throws {
+        let store = storeWithOneLoggedDay()
+        store.archive(water, from: march(11), calendar: calendar)
+        store.unarchive(water, from: march(15), calendar: calendar)
+        let habit = try #require(store.habits.first)
+        #expect(store.archivedHabits.isEmpty)
+        #expect(!habit.isDue(on: march(12), calendar: calendar))
+        #expect(habit.isDue(on: march(15), calendar: calendar))
+    }
+
+    @Test func deletingRemovesTheHabitAndItsLogsOnly() {
+        let other = HabitModel(name: "Vitamins", colorName: "gold", kind: .checkOff)
+        let store = HabitStore(
+            habits: [water, other],
+            entries: [
+                HabitEntry(habitID: water.id, date: march(9), amount: 2500),
+                HabitEntry(habitID: other.id, date: march(9), amount: 1)
+            ]
+        )
+        #expect(store.logCount(for: water) == 1)
+        store.delete(water)
+        #expect(store.allHabits.map(\.name) == ["Vitamins"])
+        #expect(store.entries.count == 1)
+        #expect(store.entries.first?.habitID == other.id)
+    }
+
+    @Test func updateIgnoresAnArchivedHabit() {
+        let store = storeWithOneLoggedDay()
+        store.archive(water, from: march(11), calendar: calendar)
+        store.update(editedWater(), from: march(12), calendar: calendar)
+        #expect(store.archivedHabits.first?.name == "Water")
+        #expect(store.archivedHabits.first?.target == 2500)
+    }
 }

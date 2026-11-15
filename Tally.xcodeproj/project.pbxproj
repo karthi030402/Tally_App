@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D57D30330A84DE4005C20BC /* TallyStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 0D57D30230A84DE4005C20BC /* TallyStorage */; };
 		0DA7B6CD308660A600AE6843 /* TallyCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0DA7B6CC308660A600AE6843 /* TallyCore */; };
 /* End PBXBuildFile section */
 
@@ -56,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				0DA7B6CD308660A600AE6843 /* TallyCore in Frameworks */,
+				0D57D30330A84DE4005C20BC /* TallyStorage in Frameworks */,
 			);
 		};
 		0D8FEA97308519C900F07E57 /* Frameworks */ = {
@@ -71,12 +73,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0D57D30130A84DE4005C20BC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		0D8FEA82308519C800F07E57 = {
 			isa = PBXGroup;
 			children = (
 				0D8FEA8D308519C800F07E57 /* Tally */,
 				0D8FEA9D308519C900F07E57 /* TallyTests */,
 				0D8FEAA7308519C900F07E57 /* TallyUITests */,
+				0D57D30130A84DE4005C20BC /* Frameworks */,
 				0D8FEA8C308519C800F07E57 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -110,6 +120,7 @@
 			name = Tally;
 			packageProductDependencies = (
 				0DA7B6CC308660A600AE6843 /* TallyCore */,
+				0D57D30230A84DE4005C20BC /* TallyStorage */,
 			);
 			productName = Tally;
 			productReference = 0D8FEA8B308519C800F07E57 /* Tally.app */;
@@ -615,6 +626,11 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0D57D30230A84DE4005C20BC /* TallyStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0DA7B6CB308660A600AE6843 /* XCLocalSwiftPackageReference "TallyCore" */;
+			productName = TallyStorage;
+		};
 		0DA7B6CC308660A600AE6843 /* TallyCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TallyCore;

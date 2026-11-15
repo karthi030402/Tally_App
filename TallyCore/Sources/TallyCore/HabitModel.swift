@@ -10,7 +10,7 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
     public var colorName: String
     public var kind: HabitKind
     /// The goal and schedule the habit started with.
-    private let initialRule: HabitRule
+    public let initialRule: HabitRule
     /// Later changes to the goal or schedule, oldest first. Each applies from its own day onwards.
     public private(set) var changes: [HabitRevision]
 
@@ -37,6 +37,27 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
         self.symbol = trimmedSymbol.isEmpty ? nil : trimmedSymbol
     }
 
+    /// Rebuilds a habit that was saved earlier, from its starting rule and its dated changes.
+    /// The changes are put in date order, so the order they were stored in doesn't matter.
+    public init(
+        id: UUID,
+        name: String,
+        symbol: String?,
+        colorName: String,
+        kind: HabitKind,
+        initialRule: HabitRule,
+        changes: [HabitRevision]
+    ) {
+        self.id = id
+        self.name = name
+        self.colorName = colorName
+        self.kind = kind
+        self.initialRule = initialRule
+        self.changes = changes.sorted { $0.effectiveFrom < $1.effectiveFrom }
+        let trimmedSymbol = symbol?.trimmingCharacters(in: .whitespaces) ?? ""
+        self.symbol = trimmedSymbol.isEmpty ? nil : trimmedSymbol
+    }
+
     /// The goal and schedule in force right now.
     public var currentRule: HabitRule { changes.last?.rule ?? initialRule }
 
@@ -48,6 +69,9 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
     public var unit: String? { currentRule.unit }
     /// The days the habit is due. Never empty; every day is all seven.
     public var weekdays: Set<HabitWeekday> { currentRule.weekdays }
+
+    /// True while the habit is archived.
+    public var isArchived: Bool { !currentRule.isActive }
 
     /// The goal and schedule that applied on `date`. Days before any change use the starting rule.
     public func rule(on date: Date, calendar: Calendar = .current) -> HabitRule {
@@ -65,6 +89,18 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
         guard rule != copy.currentRule else { return copy }
         copy.changes.append(HabitRevision(effectiveFrom: start, rule: rule))
         return copy
+    }
+
+    /// A copy archived from the start of `date` onwards. Earlier days still count the habit.
+    /// Its goal and schedule are kept, so restoring brings back the same habit.
+    public func archiving(from date: Date, calendar: Calendar = .current) -> HabitModel {
+        changing(to: currentRule.settingActive(false), from: date, calendar: calendar)
+    }
+
+    /// A copy active again from the start of `date` onwards. The days it was archived stay not-due.
+    /// Archiving and restoring on the same day leaves no trace.
+    public func restoring(from date: Date, calendar: Calendar = .current) -> HabitModel {
+        changing(to: currentRule.settingActive(true), from: date, calendar: calendar)
     }
 
     public var isEveryDay: Bool {

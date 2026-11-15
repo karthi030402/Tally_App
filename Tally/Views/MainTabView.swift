@@ -3,7 +3,7 @@ import SwiftUI
 /// The app's three tabs.
 struct MainTabView: View {
     /// The one store shared by every tab.
-    @State private var store = SampleHabits.makeStore()
+    let store: HabitStore
 
     var body: some View {
         TabView {
@@ -25,5 +25,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView()
+    MainTabView(store: SampleHabits.makeStore())
 }

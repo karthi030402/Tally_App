@@ -5,12 +5,45 @@ import TallyCore
 struct MonthCalendarCard: View {
     let months: [CalendarMonth]
     let weekdayLabels: [String]
-    let habits: [HabitModel]
-    @Binding var habitFilter: UUID?
+    private let habits: [HabitModel]
+    @Binding private var habitFilter: UUID?
+    /// Whether the header shows the "All habits" filter. A habit's own page has no use for it.
+    private let showsFilter: Bool
     /// The first day of the month on screen. Optional because a paging scroll view needs that.
     @Binding var visibleMonth: Date?
     let onSelectDay: (Date) -> Void
     var palette: CompletionPalette = .daybreak
+
+    /// A calendar with a habit filter, as on the Insights tab.
+    init(
+        months: [CalendarMonth], weekdayLabels: [String], habits: [HabitModel],
+        habitFilter: Binding<UUID?>, visibleMonth: Binding<Date?>,
+        onSelectDay: @escaping (Date) -> Void, palette: CompletionPalette = .daybreak
+    ) {
+        self.months = months
+        self.weekdayLabels = weekdayLabels
+        self.habits = habits
+        _habitFilter = habitFilter
+        showsFilter = true
+        _visibleMonth = visibleMonth
+        self.onSelectDay = onSelectDay
+        self.palette = palette
+    }
+
+    /// A calendar for one habit, with no filter.
+    init(
+        months: [CalendarMonth], weekdayLabels: [String], visibleMonth: Binding<Date?>,
+        onSelectDay: @escaping (Date) -> Void, palette: CompletionPalette = .daybreak
+    ) {
+        self.months = months
+        self.weekdayLabels = weekdayLabels
+        habits = []
+        _habitFilter = .constant(nil)
+        showsFilter = false
+        _visibleMonth = visibleMonth
+        self.onSelectDay = onSelectDay
+        self.palette = palette
+    }
 
     private static let rowSpacing: CGFloat = 8
 
@@ -58,7 +91,9 @@ struct MonthCalendarCard: View {
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
             Spacer()
-            HabitFilterMenu(habits: habits, selection: $habitFilter)
+            if showsFilter {
+                HabitFilterMenu(habits: habits, selection: $habitFilter)
+            }
         }
     }
 

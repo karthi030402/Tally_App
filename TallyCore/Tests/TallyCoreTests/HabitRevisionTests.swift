@@ -78,4 +78,27 @@ struct HabitRevisionTests {
         let same = water.changing(to: water.currentRule, from: march(11), calendar: calendar)
         #expect(same.changes.isEmpty)
     }
+
+    @Test func aSavedHabitRebuildsExactly() {
+        // Goal raised from the 11th, then archived from the 15th.
+        let original = raisedGoal().archiving(from: march(15), calendar: calendar)
+        let rebuilt = HabitModel(
+            id: original.id, name: original.name, symbol: original.symbol, colorName: original.colorName,
+            kind: original.kind, initialRule: original.initialRule, changes: original.changes
+        )
+        #expect(rebuilt == original)
+        #expect(rebuilt.isArchived)
+        #expect(rebuilt.goalAmount(on: march(10), calendar: calendar) == 2500)
+    }
+
+    @Test func rebuildingPutsChangesInDateOrder() {
+        let original = raisedGoal().archiving(from: march(15), calendar: calendar)
+        let rebuilt = HabitModel(
+            id: original.id, name: original.name, symbol: original.symbol, colorName: original.colorName,
+            kind: original.kind, initialRule: original.initialRule, changes: original.changes.reversed()
+        )
+        #expect(rebuilt == original)
+        #expect(rebuilt.isDue(on: march(12), calendar: calendar))
+        #expect(!rebuilt.isDue(on: march(16), calendar: calendar))
+    }
 }

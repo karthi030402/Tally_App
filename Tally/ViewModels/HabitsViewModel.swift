@@ -31,31 +31,36 @@ final class HabitsViewModel {
         store.update(habit)
     }
 
+    /// Archives a habit from today. Its past days and logs stay.
+    func archive(_ habit: HabitModel) {
+        store.archive(habit)
+    }
+
+    /// Brings an archived habit back from today.
+    func unarchive(_ habit: HabitModel) {
+        store.unarchive(habit)
+    }
+
+    /// Permanently removes a habit and its logs.
+    func delete(_ habit: HabitModel) {
+        store.delete(habit)
+    }
+
+    /// The delete confirmation text, saying how many logs will go.
+    func deleteMessage(for habit: HabitModel) -> String {
+        HabitDeleteMessage.text(logCount: store.logCount(for: habit))
+    }
+
     // MARK: - Card text
 
     /// "Check-off · Daily" or "Goal 2500 ml · Mon Wed Fri".
     func detailText(for habit: HabitModel) -> String {
-        let kind: String
-        switch habit.kind {
-        case .checkOff:
-            kind = "Check-off"
-        case .counter:
-            // "Goal 2500 ml", "Goal 20 pages". Missing parts are simply left out.
-            let amount = habit.target?.habitAmountText
-            kind = ["Goal", amount, habit.unit].compactMap { $0 }.joined(separator: " ")
-        }
-        return "\(kind) · \(scheduleText(for: habit))"
+        habit.detailText
     }
 
     /// "Daily", or the due weekdays in Monday-first order, such as "Mon Wed Fri".
     func scheduleText(for habit: HabitModel) -> String {
-        guard !habit.isEveryDay else { return "Daily" }
-        let symbols = Calendar.current.shortWeekdaySymbols // index 0 is Sunday
-        // allCases is declared Monday-first, which is the display order.
-        return HabitWeekday.allCases
-            .filter { habit.weekdays.contains($0) }
-            .map { symbols[$0.rawValue - 1] }
-            .joined(separator: " ")
+        habit.scheduleText
     }
 
     func streak(for habit: HabitModel) -> Int {

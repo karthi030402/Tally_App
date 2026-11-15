@@ -30,12 +30,12 @@ final class InsightsViewModel {
 
     private var today: Date { calendar.startOfDay(for: now()) }
 
-    /// The habits the filter menus offer.
-    var habits: [HabitModel] { store.habits }
+    /// The habits the filter menus offer. Archived habits are included, so their past can be looked at.
+    var habits: [HabitModel] { store.allHabits }
 
     private func filteredHabits(_ id: UUID?) -> [HabitModel] {
-        guard let id else { return store.habits }
-        return store.habits.filter { $0.id == id }
+        guard let id else { return store.allHabits }
+        return store.allHabits.filter { $0.id == id }
     }
 
     /// The first day anything was logged, so the chart and calendar start where the data starts.
@@ -57,7 +57,7 @@ final class InsightsViewModel {
 
     private var weekTotals: (met: Int, due: Int) {
         let days = HabitInsights.completions(
-            from: weekStart, through: lastCountedDay, habits: store.habits,
+            from: weekStart, through: lastCountedDay, habits: store.allHabits,
             entries: store.entries, calendar: calendar
         )
         return (days.reduce(0) { $0 + $1.met }, days.reduce(0) { $0 + $1.due })
@@ -79,7 +79,7 @@ final class InsightsViewModel {
 
     private var weekRates: [HabitRate] {
         HabitInsights.rates(
-            of: store.habits, entries: store.entries, from: weekStart,
+            of: store.allHabits, entries: store.entries, from: weekStart,
             through: lastCountedDay, calendar: calendar
         )
     }
@@ -98,7 +98,7 @@ final class InsightsViewModel {
     }
 
     private func highlight(_ rate: HabitRate?) -> HabitHighlight? {
-        guard let rate, let habit = store.habits.first(where: { $0.id == rate.habitID }) else { return nil }
+        guard let rate, let habit = store.allHabits.first(where: { $0.id == rate.habitID }) else { return nil }
         let unit = rate.due == 1 ? "day" : "days"
         return HabitHighlight(habit: habit, detail: "\(rate.met) of \(rate.due) \(unit) met")
     }
@@ -119,55 +119,16 @@ final class InsightsViewModel {
 
     // MARK: Month calendar
 
-    /// The first day of every month from the first log through this month, oldest first.
-    private var calendarMonths: [Date] {
-        guard let first = calendar.dateInterval(of: .month, for: earliestDay)?.start,
-              let last = calendar.dateInterval(of: .month, for: today)?.start else { return [] }
-        var months: [Date] = []
-        var month = first
-        while month <= last {
-            months.append(month)
-            guard let next = calendar.date(byAdding: .month, value: 1, to: month) else { break }
-            month = next
-        }
-        return months
+    private var calendarBuilder: MonthCalendarBuilder {
+        MonthCalendarBuilder(calendar: calendar, today: today, firstDay: earliestDay, selectedDay: selectedDay)
     }
 
     /// Single-letter day names, starting from the calendar's first weekday.
-    var weekdayLabels: [String] {
-        let symbols = calendar.veryShortStandaloneWeekdaySymbols
-        let shift = calendar.firstWeekday - 1
-        return Array(symbols[shift...] + symbols[..<shift])
-    }
-
-    /// The month split into weeks, padded with nil to exactly six rows of seven
-    /// so every page has the same height.
-    private func weeks(in month: Date) -> [[Date?]] {
-        let count = calendar.range(of: .day, in: .month, for: month)?.count ?? 30
-        let offset = (calendar.component(.weekday, from: month) - calendar.firstWeekday + 7) % 7
-        var days: [Date?] = Array(repeating: nil, count: offset)
-        days += (0..<count).map { calendar.date(byAdding: .day, value: $0, to: month) }
-        while days.count < 42 { days.append(nil) }
-        return stride(from: 0, to: 42, by: 7).map { Array(days[$0..<$0 + 7]) }
-    }
+    var weekdayLabels: [String] { calendarBuilder.weekdayLabels }
 
     /// Every month the calendar can show, with each day's ring value and state already worked out.
     var calendarPages: [CalendarMonth] {
-        calendarMonths.map { month in
-            CalendarMonth(start: month, weeks: weeks(in: month).map { week in week.map { $0.map(calendarDay) } })
-        }
-    }
-
-    private func calendarDay(_ date: Date) -> CalendarDay {
-        // Days that haven't happened, or came before the first log, have no value, so no ring.
-        let hasData = date <= today && date >= earliestDay
-        return CalendarDay(
-            date: date,
-            number: calendar.component(.day, from: date),
-            fraction: hasData ? completion(on: date).fraction : nil,
-            isSelected: calendar.isDate(date, inSameDayAs: selectedDay),
-            isFuture: date > today
-        )
+        calendarBuilder.pages { completion(on: $0).fraction }
     }
 
     /// How `day` went across the habits the calendar filter allows.
@@ -190,19 +151,7 @@ final class InsightsViewModel {
     }
 
     private func dayDetail(for habit: HabitModel, on day: Date) -> HabitDayDetail {
-        guard habit.isDue(on: day, calendar: calendar) else {
-            return HabitDayDetail(habit: habit, fraction: nil, text: "Not scheduled")
-        }
-        let progress = habit.progress(from: store.entries, on: day, calendar: calendar)
-        let text: String
-        switch habit.kind {
-        case .checkOff:
-            text = progress.isMet ? "Done" : "Not done"
-        case .counter:
-            let unit = habit.rule(on: day, calendar: calendar).unit.map { " \($0)" } ?? ""
-            text = "\(progress.total.habitAmountText) / \(progress.goal.habitAmountText)\(unit)"
-        }
-        return HabitDayDetail(habit: habit, fraction: progress.fraction, text: text)
+        HabitDayDetail(habit: habit, entries: store.entries, day: day, calendar: calendar)
     }
 
     // MARK: Streaks
@@ -213,13 +162,9 @@ final class InsightsViewModel {
             let streak = store.streak(for: habit)
             return HabitStreakRow(
                 habit: habit,
-                currentText: dayCount(streak.current),
-                bestText: dayCount(streak.best)
+                currentText: streak.current.dayCountText,
+                bestText: streak.best.dayCountText
             )
         }
-    }
-
-    private func dayCount(_ days: Int) -> String {
-        "\(days) \(days == 1 ? "day" : "days")"
     }
 }

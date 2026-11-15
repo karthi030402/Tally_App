@@ -27,6 +27,12 @@ enum SampleHabits {
     static let active = [water, vitamins, gym, reading]
     static let archived = [meditation]
 
+    /// The habits to seed into a fresh database: the active ones, then the archived ones,
+    /// already archived from the very beginning.
+    static var seedHabits: [HabitModel] {
+        active + archived.map { $0.archiving(from: .distantPast) }
+    }
+
     /// Logs for today so Today looks lived-in: water 1500 ml, vitamins done, 5 pages read.
     static func todayEntries(now: Date = .now) -> [HabitEntry] {
         let waterTaps = (0..<6).map { _ in HabitEntry(habitID: water.id, date: now, amount: 250) }

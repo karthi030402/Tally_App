@@ -33,10 +33,12 @@ public extension HabitModel {
     /// What one tap adds. A check-off habit adds 1.
     var tapAmount: Double { step ?? goalAmount }
 
-    /// Whether the habit was due on the weekday of `date`, by the schedule that applied that day.
+    /// Whether the habit was due on the weekday of `date`, by the rules that applied that day.
+    /// An archived habit isn't due on any day.
     func isDue(on date: Date, calendar: Calendar = .current) -> Bool {
         guard let weekday = HabitWeekday(rawValue: calendar.component(.weekday, from: date)) else { return false }
-        return rule(on: date, calendar: calendar).weekdays.contains(weekday)
+        let dayRule = rule(on: date, calendar: calendar)
+        return dayRule.isActive && dayRule.weekdays.contains(weekday)
     }
 
     /// This habit's progress on the day of `date`, from a list of everyone's entries.

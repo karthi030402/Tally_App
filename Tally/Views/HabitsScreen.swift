@@ -2,19 +2,19 @@ import SwiftUI
 import TallyCore
 
 /// The Habits tab: active habits, then archived habits. An empty section shows a placeholder.
-/// Tapping an active habit opens it to edit.
+/// Tapping a habit opens its page, and the ⋯ button on a card opens its options.
 struct HabitsScreen: View {
     @State private var viewModel: HabitsViewModel
+    /// Handed on to the pages this stack opens, so each one builds its own view model.
+    private let store: HabitStore
     @State private var path: [HabitsRoute] = []
+    /// The habit whose options sheet is open.
+    @State private var optionsHabit: HabitModel?
 
     /// The screen owns its view model, which reads from the store shared by every tab.
     init(store: HabitStore) {
-        self.init(viewModel: HabitsViewModel(store: store))
-    }
-
-    /// Previews and tests can pass their own view model.
-    init(viewModel: HabitsViewModel) {
-        _viewModel = State(initialValue: viewModel)
+        self.store = store
+        _viewModel = State(initialValue: HabitsViewModel(store: store))
     }
 
     private var activeSection: some View {
@@ -25,13 +25,7 @@ struct HabitsScreen: View {
                 EmptySectionCard(message: HabitListSection.active.emptyMessage)
             } else {
                 ForEach(viewModel.habits) { habit in
-                    Button {
-                        path.append(.editHabit(habit.id))
-                    } label: {
-                        card(for: habit)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Opens the habit to edit")
+                    card(for: habit)
                 }
             }
         }
@@ -65,7 +59,10 @@ struct HabitsScreen: View {
             habit: habit,
             detailText: viewModel.detailText(for: habit),
             streakText: viewModel.streakText(for: habit),
-            hasActiveStreak: viewModel.streak(for: habit) > 0
+            hasActiveStreak: viewModel.streak(for: habit) > 0,
+            tapHint: "Opens the habit's page",
+            onTap: { path.append(.habitDetail(habit.id)) },
+            onMore: { optionsHabit = habit }
         )
     }
 
@@ -80,6 +77,16 @@ struct HabitsScreen: View {
             }
             .background { DawnBackground() }
             .navigationTitle("Habits")
+            .sheet(item: $optionsHabit) { habit in
+                HabitActionsSheet(
+                    habit: habit,
+                    deleteMessage: viewModel.deleteMessage(for: habit),
+                    onToggleArchive: {
+                        if habit.isArchived { viewModel.unarchive(habit) } else { viewModel.archive(habit) }
+                    },
+                    onDelete: { viewModel.delete(habit) }
+                )
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Settings", systemImage: "gearshape") { path.append(.settings) }
@@ -101,6 +108,10 @@ struct HabitsScreen: View {
                 case .addHabit:
                     AddHabitScreen {
                         viewModel.add($0)
+                    }
+                case .habitDetail(let id):
+                    HabitDetailScreen(store: store, habitID: id) {
+                        path.append(.editHabit(id))
                     }
                 case .editHabit(let id):
                     // Looked up when the screen is built, in case the habit is gone by then.
