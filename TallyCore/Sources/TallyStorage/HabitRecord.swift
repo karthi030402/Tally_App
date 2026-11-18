@@ -15,6 +15,9 @@ final class HabitRecord {
     var initialRule: RuleSnapshot
     /// The dated changes, oldest first.
     var changes: [RevisionSnapshot]
+    /// The default is only used for habits saved before this field existed. It keeps them due on
+    /// every past day, as they were. Habits made now always save their real creation date.
+    var createdAt: Date = Date.distantPast
 
     init(habit: HabitModel, sortIndex: Int) {
         self.id = habit.id
@@ -25,6 +28,7 @@ final class HabitRecord {
         self.sortIndex = sortIndex
         self.initialRule = RuleSnapshot(habit.initialRule)
         self.changes = habit.changes.map(RevisionSnapshot.init)
+        self.createdAt = habit.createdAt
     }
 
     /// Copies an edited habit's values onto this record. The type and position stay as they were.
@@ -42,7 +46,8 @@ final class HabitRecord {
         return HabitModel(
             id: id, name: name, symbol: symbol, colorName: colorName, kind: kind,
             initialRule: initialRule.rule(kind: kind),
-            changes: changes.map { $0.revision(kind: kind) }
+            changes: changes.map { $0.revision(kind: kind) },
+            createdAt: createdAt
         )
     }
 }

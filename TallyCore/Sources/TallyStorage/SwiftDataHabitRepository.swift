@@ -18,8 +18,25 @@ public final class SwiftDataHabitRepository: HabitRepository {
         return try context.fetch(descriptor).compactMap { $0.habit() }
     }
 
+    public func loadHabit(id: UUID) throws -> HabitModel? {
+        var descriptor = FetchDescriptor<HabitRecord>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first?.habit()
+    }
+
     public func loadEntries() throws -> [HabitEntry] {
         let descriptor = FetchDescriptor<EntryRecord>(sortBy: [SortDescriptor(\.date)])
+        return try context.fetch(descriptor).map(\.entry)
+    }
+
+    public func loadEntries(forHabit habitID: UUID, on date: Date, calendar: Calendar) throws -> [HabitEntry] {
+        guard let day = calendar.dateInterval(of: .day, for: date) else { return [] }
+        let start = day.start
+        let end = day.end
+        let descriptor = FetchDescriptor<EntryRecord>(
+            predicate: #Predicate { $0.habitID == habitID && $0.date >= start && $0.date < end },
+            sortBy: [SortDescriptor(\.date)]
+        )
         return try context.fetch(descriptor).map(\.entry)
     }
 

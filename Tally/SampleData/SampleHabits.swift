@@ -5,23 +5,24 @@ import TallyCore
 enum SampleHabits {
     static let water = HabitModel(
         name: "Water", symbol: "drop.fill", colorName: "indigo",
-        kind: .counter, target: 2500, step: 250, unit: "ml", weekdays: [.monday, .friday]
+        kind: .counter, target: 2500, step: 250, unit: "ml", weekdays: [.monday, .friday],
+        createdAt: .distantPast
     )
     static let vitamins = HabitModel(
         name: "Vitamins", symbol: "pills.fill", colorName: "gold",
-        kind: .checkOff
+        kind: .checkOff, createdAt: .distantPast
     )
     static let gym = HabitModel(
         name: "Gym", symbol: "dumbbell.fill", colorName: "coral",
-        kind: .checkOff, weekdays: [.monday, .friday]
+        kind: .checkOff, weekdays: [.monday, .friday], createdAt: .distantPast
     )
     static let reading = HabitModel(
         name: "Reading", symbol: "book.fill", colorName: "orchid",
-        kind: .counter, target: 20, step: 5, unit: "pages"
+        kind: .counter, target: 20, step: 5, unit: "pages", createdAt: .distantPast
     )
     static let meditation = HabitModel(
         name: "Meditation", colorName: "indigo",
-        kind: .checkOff
+        kind: .checkOff, createdAt: .distantPast
     )
 
     static let active = [water, vitamins, gym, reading]

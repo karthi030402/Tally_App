@@ -10,10 +10,13 @@ struct HabitsScreen: View {
     @State private var path: [HabitsRoute] = []
     /// The habit whose options sheet is open.
     @State private var optionsHabit: HabitModel?
+    /// A habit another part of the app (a widget link) asked to open. Taken and cleared once handled.
+    @Binding private var requestedHabitID: UUID?
 
     /// The screen owns its view model, which reads from the store shared by every tab.
-    init(store: HabitStore) {
+    init(store: HabitStore, requestedHabitID: Binding<UUID?> = .constant(nil)) {
         self.store = store
+        _requestedHabitID = requestedHabitID
         _viewModel = State(initialValue: HabitsViewModel(store: store))
     }
 
@@ -66,6 +69,14 @@ struct HabitsScreen: View {
         )
     }
 
+    /// Opens the page a link asked for, replacing whatever was open. A habit that no longer exists is ignored.
+    private func openRequestedHabit() {
+        guard let id = requestedHabitID else { return }
+        requestedHabitID = nil
+        guard store.allHabits.contains(where: { $0.id == id }) else { return }
+        path = [.habitDetail(id)]
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
@@ -113,6 +124,8 @@ struct HabitsScreen: View {
                     HabitDetailScreen(store: store, habitID: id) {
                         path.append(.editHabit(id))
                     }
+                    // A link can swap one habit's page for another's, and the page keeps its view model.
+                    .id(id)
                 case .editHabit(let id):
                     // Looked up when the screen is built, in case the habit is gone by then.
                     if let habit = viewModel.habit(id: id) {
@@ -125,6 +138,9 @@ struct HabitsScreen: View {
                 }
             }
         }
+        // On the stack itself, so it still fires while a page covers the list.
+        .onAppear(perform: openRequestedHabit)
+        .onChange(of: requestedHabitID) { openRequestedHabit() }
     }
 }
 

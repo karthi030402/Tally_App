@@ -2,6 +2,7 @@ import Foundation
 import os
 import TallyCore
 import TallyStorage
+import WidgetKit
 
 /// Builds the app's store on the real database. In Debug builds a brand-new database is filled
 /// with the sample habits once, so there is something to look at while developing.
@@ -16,6 +17,8 @@ enum StoreSetup {
             #if DEBUG
             try seedSampleData(into: repository, defaults: defaults)
             #endif
+            // The database may have just been moved or seeded, so show the widgets what's in it.
+            WidgetCenter.shared.reloadAllTimelines()
             return HabitStore(repository: repository)
         } catch {
             logger.fault("Could not open the database: \(error.localizedDescription)")

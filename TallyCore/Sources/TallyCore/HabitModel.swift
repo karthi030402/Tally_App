@@ -13,6 +13,8 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
     public let initialRule: HabitRule
     /// Later changes to the goal or schedule, oldest first. Each applies from its own day onwards.
     public private(set) var changes: [HabitRevision]
+    /// When the habit was made. It isn't due, and isn't counted in Insights, on any day before this one.
+    public let createdAt: Date
 
     public init(
         id: UUID = UUID(),
@@ -23,7 +25,8 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
         target: Double? = nil,
         step: Double? = nil,
         unit: String? = nil,
-        weekdays: Set<HabitWeekday> = HabitWeekday.everyDay
+        weekdays: Set<HabitWeekday> = HabitWeekday.everyDay,
+        createdAt: Date = .now
     ) {
         self.id = id
         self.name = name
@@ -31,6 +34,7 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
         self.kind = kind
         self.initialRule = HabitRule(kind: kind, target: target, step: step, unit: unit, weekdays: weekdays)
         self.changes = []
+        self.createdAt = createdAt
 
         // A blank symbol name counts as "not chosen".
         let trimmedSymbol = symbol?.trimmingCharacters(in: .whitespaces) ?? ""
@@ -46,12 +50,14 @@ public struct HabitModel: Identifiable, Hashable, Sendable {
         colorName: String,
         kind: HabitKind,
         initialRule: HabitRule,
-        changes: [HabitRevision]
+        changes: [HabitRevision],
+        createdAt: Date = .distantPast
     ) {
         self.id = id
         self.name = name
         self.colorName = colorName
         self.kind = kind
+        self.createdAt = createdAt
         self.initialRule = initialRule
         self.changes = changes.sorted { $0.effectiveFrom < $1.effectiveFrom }
         let trimmedSymbol = symbol?.trimmingCharacters(in: .whitespaces) ?? ""

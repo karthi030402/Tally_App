@@ -34,8 +34,9 @@ public extension HabitModel {
     var tapAmount: Double { step ?? goalAmount }
 
     /// Whether the habit was due on the weekday of `date`, by the rules that applied that day.
-    /// An archived habit isn't due on any day.
+    /// An archived habit isn't due on any day, and no habit is due before the day it was created.
     func isDue(on date: Date, calendar: Calendar = .current) -> Bool {
+        guard calendar.startOfDay(for: date) >= calendar.startOfDay(for: createdAt) else { return false }
         guard let weekday = HabitWeekday(rawValue: calendar.component(.weekday, from: date)) else { return false }
         let dayRule = rule(on: date, calendar: calendar)
         return dayRule.isActive && dayRule.weekdays.contains(weekday)

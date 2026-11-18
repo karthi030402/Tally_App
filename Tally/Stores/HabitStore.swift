@@ -3,6 +3,7 @@ import Observation
 import os
 import TallyCore
 import TallyStorage
+import WidgetKit
 
 /// The source of truth for habits and their logs, shared by every tab. It keeps them in memory so
 /// the screens and the Insights math stay fast, and writes every change through to a repository.
@@ -38,7 +39,7 @@ final class HabitStore {
 
     /// Reads every habit and log from the repository again.
     func reload() {
-        persist {
+        persist(refreshingWidgets: false) {
             allHabits = try repository.loadHabits()
             entries = try repository.loadEntries()
         }
@@ -46,9 +47,13 @@ final class HabitStore {
 
     /// Runs a read or write on the repository. A failure is logged and kept in `lastError`.
     /// The change that was already made in memory is left in place.
-    private func persist(_ work: () throws -> Void) {
+    /// After a write succeeds, the widgets are asked to refresh so they match the app.
+    private func persist(refreshingWidgets: Bool = true, _ work: () throws -> Void) {
         do {
             try work()
+            if refreshingWidgets {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
         } catch {
             lastError = error
             Self.logger.error("Repository failure: \(error.localizedDescription)")

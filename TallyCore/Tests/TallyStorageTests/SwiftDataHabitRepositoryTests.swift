@@ -73,6 +73,24 @@ struct SwiftDataHabitRepositoryTests {
         #expect(entries.first?.date == march(9))
     }
 
+    @Test func loadingOneHabitByIdReturnsOnlyThatHabit() throws {
+        let repository = try makeRepository()
+        try repository.save(water)
+        try repository.save(vitamins)
+        #expect(try repository.loadHabit(id: vitamins.id) == vitamins)
+        #expect(try repository.loadHabit(id: UUID()) == nil)
+    }
+
+    @Test func loadingOneHabitsDayReturnsOnlyThoseLogsOldestFirst() throws {
+        let repository = try makeRepository()
+        try repository.add(HabitEntry(habitID: water.id, date: march(9), amount: 250))
+        try repository.add(HabitEntry(habitID: water.id, date: calendar.date(byAdding: .hour, value: 3, to: march(10)) ?? .distantPast, amount: 500))
+        try repository.add(HabitEntry(habitID: water.id, date: march(10), amount: 250))
+        try repository.add(HabitEntry(habitID: vitamins.id, date: march(10), amount: 1))
+        let entries = try repository.loadEntries(forHabit: water.id, on: march(10), calendar: calendar)
+        #expect(entries.map(\.amount) == [250, 500])
+    }
+
     @Test func addingManyLogsAtOnceSavesThemAll() throws {
         let repository = try makeRepository()
         let entries = (1...20).map { HabitEntry(habitID: water.id, date: march($0), amount: 250) }
@@ -99,6 +117,53 @@ struct SwiftDataHabitRepositoryTests {
         try repository.deleteHabit(id: water.id)
         #expect(try repository.loadHabits().map(\.name) == ["Vitamins"])
         #expect(try repository.loadEntries().map(\.habitID) == [vitamins.id])
+    }
+
+    private func temporaryStoreURL() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("tally-move-\(UUID().uuidString).store")
+    }
+
+    private func removeStore(at url: URL) {
+        for suffix in ["", "-shm", "-wal"] {
+            try? FileManager.default.removeItem(at: URL(fileURLWithPath: url.path + suffix))
+        }
+    }
+
+    @Test func movingAStoreKeepsItsData() throws {
+        let old = temporaryStoreURL()
+        let new = temporaryStoreURL()
+        defer { removeStore(at: old); removeStore(at: new) }
+        do {
+            let repository = SwiftDataHabitRepository(container: try TallyStorage.makeContainer(url: old))
+            try repository.save(water)
+            try repository.add(HabitEntry(habitID: water.id, date: march(9), amount: 2500))
+        }
+        try TallyStorage.moveStore(from: old, to: new)
+        #expect(!FileManager.default.fileExists(atPath: old.path))
+        let moved = SwiftDataHabitRepository(container: try TallyStorage.makeContainer(url: new))
+        #expect(try moved.loadHabits() == [water])
+        #expect(try moved.loadEntries().count == 1)
+    }
+
+    @Test func movingNeverOverwritesAnExistingStore() throws {
+        let old = temporaryStoreURL()
+        let new = temporaryStoreURL()
+        defer { removeStore(at: old); removeStore(at: new) }
+        do {
+            try SwiftDataHabitRepository(container: try TallyStorage.makeContainer(url: old)).save(water)
+            try SwiftDataHabitRepository(container: try TallyStorage.makeContainer(url: new)).save(vitamins)
+        }
+        try TallyStorage.moveStore(from: old, to: new)
+        let kept = SwiftDataHabitRepository(container: try TallyStorage.makeContainer(url: new))
+        #expect(try kept.loadHabits() == [vitamins])
+        #expect(FileManager.default.fileExists(atPath: old.path))
+    }
+
+    @Test func movingWithNoOldStoreDoesNothing() throws {
+        let old = temporaryStoreURL()
+        let new = temporaryStoreURL()
+        try TallyStorage.moveStore(from: old, to: new)
+        #expect(!FileManager.default.fileExists(atPath: new.path))
     }
 
     @Test func dataSurvivesANewContainerOnTheSameFile() throws {
